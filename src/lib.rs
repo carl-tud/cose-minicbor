@@ -141,6 +141,8 @@ pub mod cose {
     pub use crate::sign::cose_struct::{CoseSign, CoseSign1};
 
     pub use crate::cose_recipient::CoseRecipient;
+
+    pub use crate::common::{HeaderMap, BstrHeaderMap};
 }
 
 use core::ops::{Deref, DerefMut};

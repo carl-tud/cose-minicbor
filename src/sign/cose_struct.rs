@@ -1,4 +1,5 @@
-use crate::common::{BstrHeaderMap, HeaderMap, MAX_SUPPORTED_ACCESSTOKEN_LEN};
+pub use crate::common::{BstrHeaderMap, HeaderMap};
+use crate::common::{MAX_SUPPORTED_ACCESSTOKEN_LEN};
 use crate::errors::{CoseError, ErrorImpl};
 use minicbor::{CborLen, Decode, Encode};
 use suit_cbor::iter_wrapper;
