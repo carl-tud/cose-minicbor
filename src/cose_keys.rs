@@ -1,3 +1,4 @@
+use crate::Builder;
 pub use crate::common::CoseAlg;
 use crate::errors::{CoseError, ErrorImpl};
 use crate::multitype::{BytesBool, CrvOrK};
@@ -59,14 +60,58 @@ impl<'a> CoseKey<'a> {
         }
     }
 
+    pub fn builder(self) -> Builder<Self> {
+        self.into()
+    }
+
+    pub fn key_id(&self) -> Option<&'a [u8]> {
+        self.kid
+    }
+
+    pub fn algorithm(&self) -> Option<CoseAlg> {
+        self.alg
+    }
+
+    pub fn curve(&self) -> Option<Curve> {
+        let Some(CrvOrK::Crv(curve)) = self.crv_or_k else {
+            return None;
+        };
+        Some(curve)
+    }
+
+    pub fn k(&self) -> Option<&'a [u8]> {
+        let Some(CrvOrK::K(k)) = self.crv_or_k else {
+            return None;
+        };
+        Some(k)
+    }
+
+    pub fn key_ops(&self) -> Option<KeyOp> {
+        self.key_ops
+    }
+
+    pub fn x(&self) -> Option<&'a [u8]> {
+        self.x
+    }
+
+    pub fn y(&self) -> Option<BytesBool<'a>> {
+        self.y
+    }
+
+    pub fn d(&self) -> Option<&'a [u8]> {
+        self.d
+    }
+
     /// Adds Key ID to [`CoseKey`].
-    pub fn kid(&mut self, kid: &'a [u8]) {
+    pub fn with_key_id(&mut self, kid: &'a [u8]) -> &mut Self {
         self.kid = Some(kid);
+        self
     }
 
     /// Adds Algorithm to [`CoseKey`].
-    pub fn alg(&mut self, alg: CoseAlg) {
+    pub fn with_algorithm(&mut self, alg: CoseAlg) -> &mut Self {
         self.alg = Some(alg);
+        self
     }
 
     /// Validate that the key has the required parameters to accept the current
@@ -97,22 +142,22 @@ impl<'a> CoseKey<'a> {
 
     /// Adds symmetrical Key to [`CoseKey`]
     /// Raises error if this key is not of type [`KeyType::Symmetric`].
-    pub fn k(&mut self, k: &'a [u8]) -> Result<(), CoseError> {
+    pub fn with_k(&mut self, k: &'a [u8]) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Symmetric | KeyType::HssLms) {
             return Err(ErrorImpl::UncompatibleKeyField.into());
         }
         self.crv_or_k = Some(CrvOrK::K(k));
-        Ok(())
+        Ok(self)
     }
 
     /// Adds curve to [`CoseKey`].
     /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
-    pub fn crv(&mut self, crv: Curve) -> Result<(), CoseError> {
+    pub fn with_curve(&mut self, crv: Curve) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Ec2 | KeyType::Okp) {
             return Err(ErrorImpl::UncompatibleKeyField.into());
         }
         self.crv_or_k = Some(CrvOrK::Crv(crv));
-        Ok(())
+        Ok(self)
     }
 
     /// Try to get the curve from [`CoseKey`] assuming it should be present.
@@ -146,17 +191,17 @@ impl<'a> CoseKey<'a> {
 
     /// Adds public key or x-coordinate to [`CoseKey`].
     /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
-    pub fn x(&mut self, x: &'a [u8]) -> Result<(), CoseError> {
+    pub fn with_x(&mut self, x: &'a [u8]) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Ec2 | KeyType::Okp) {
             return Err(ErrorImpl::UncompatibleKeyField.into());
         }
         self.x = Some(x);
-        Ok(())
+        Ok(self)
     }
 
     /// Sets the y-coordinate (or its compressed parity flag) for an EC2 key.
     /// Raises error if this key is not of type [`KeyType::Ec2`].
-    pub fn y<T>(&mut self, y: T) -> Result<(), CoseError>
+    pub fn with_y<T>(&mut self, y: T) -> Result<&mut Self, CoseError>
     where
         T: Into<BytesBool<'a>>,
     {
@@ -165,24 +210,25 @@ impl<'a> CoseKey<'a> {
         }
 
         self.y = Some(y.into());
-        Ok(())
+        Ok(self)
     }
 
     /// Adds secret key d to [`CoseKey`].
     /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
-    pub fn d(&mut self, d: &'a [u8]) -> Result<(), CoseError> {
+    pub fn with_d(&mut self, d: &'a [u8]) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Ec2 | KeyType::Okp) {
             return Err(ErrorImpl::UncompatibleKeyField.into());
         }
         self.d = Some(d);
-        Ok(())
+        Ok(self)
     }
 
     /// Adds key_op depending on KeyOp to [`CoseKey`]
     /// Only one key op is supported so if you aim for a generic key
     /// don't use this field assignment used to filter on keys.
-    pub fn key_op(&mut self, use_for: KeyOp) {
-        self.key_ops = Some(use_for)
+    pub fn with_key_op(&mut self, use_for: KeyOp) -> &mut Self {
+        self.key_ops = Some(use_for);
+        self
     }
 
     /// Verify that keys field are not empty when needed.
@@ -220,6 +266,67 @@ impl<'a> CoseKey<'a> {
         self.verify_curve()?;
         self.verify_alg()?;
         self.verify_key_present()
+    }
+}
+
+impl<'a> Builder<CoseKey<'a>> {
+    /// Adds Key ID to [`CoseKey`].
+    pub fn key_id(mut self, kid: &'a [u8]) -> Self {
+        self.with_key_id(kid);
+        self
+    }
+
+    /// Adds Algorithm to [`CoseKey`].
+    pub fn algorithm(mut self, alg: CoseAlg) -> Self {
+        self.with_algorithm(alg);
+        self
+    }
+
+
+    /// Adds symmetrical Key to [`CoseKey`]
+    /// Raises error if this key is not of type [`KeyType::Symmetric`].
+    pub fn k(mut self, k: &'a [u8]) -> Result<Self, CoseError> {
+        self.with_k(k)?;
+        Ok(self)
+    }
+
+    /// Adds curve to [`CoseKey`].
+    /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
+    pub fn curve(mut self, crv: Curve) -> Result<Self, CoseError> {
+        self.with_curve(crv)?;
+        Ok(self)
+    }
+
+    /// Adds public key or x-coordinate to [`CoseKey`].
+    /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
+    pub fn x(mut self, x: &'a [u8]) -> Result<Self, CoseError> {
+        self.with_x(x)?;
+        Ok(self)
+    }
+
+    /// Sets the y-coordinate (or its compressed parity flag) for an EC2 key.
+    /// Raises error if this key is not of type [`KeyType::Ec2`].
+    pub fn y<T>(mut self, y: T) -> Result<Self, CoseError>
+    where
+        T: Into<BytesBool<'a>>,
+    {
+        self.with_y(y)?;
+        Ok(self)
+    }
+
+    /// Adds secret key d to [`CoseKey`].
+    /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
+    pub fn d(mut self, d: &'a [u8]) -> Result<Self, CoseError> {
+        self.with_d(d)?;
+        Ok(self)
+    }
+
+    /// Adds key_op depending on KeyOp to [`CoseKey`]
+    /// Only one key op is supported so if you aim for a generic key
+    /// don't use this field assignment used to filter on keys.
+    pub fn key_op(mut self, use_for: KeyOp) -> Self {
+        self.with_key_op(use_for);
+        self
     }
 }
 
@@ -532,21 +639,21 @@ d6280',
         let mut builder: CoseKeySetBuilder<KEY_SET_SIZE_TEST> =
             CoseKeySetBuilder::try_new().unwrap();
         let mut key1 = CoseKey::new(KeyType::Ec2);
-        key1.x(b"first").unwrap();
-        key1.y(b"first").unwrap();
-        key1.crv(Curve::P256).unwrap();
+        key1.with_x(b"first").unwrap();
+        key1.with_y(b"first").unwrap();
+        key1.with_curve(Curve::P256).unwrap();
 
         let mut key2 = CoseKey::new(KeyType::Ec2);
-        key2.alg(CoseAlg::ES256);
-        key2.x(b"second").unwrap();
-        key2.y(b"second").unwrap();
-        key2.crv(Curve::P256).unwrap();
+        key2.with_algorithm(CoseAlg::ES256);
+        key2.with_x(b"second").unwrap();
+        key2.with_y(b"second").unwrap();
+        key2.with_curve(Curve::P256).unwrap();
 
         let mut key3 = CoseKey::new(KeyType::Ec2);
-        key3.x(b"third").unwrap();
-        key3.y(b"third").unwrap();
-        key3.kid(b"key3");
-        key3.crv(Curve::P256).unwrap();
+        key3.with_x(b"third").unwrap();
+        key3.with_y(b"third").unwrap();
+        key3.with_key_id(b"key3");
+        key3.with_curve(Curve::P256).unwrap();
 
         builder.push_key(key1).unwrap();
         builder.push_key(key2).unwrap();
@@ -599,7 +706,7 @@ d6280',
         let mut non_sym = CoseKey::new(KeyType::Ec2);
         assert!(
             non_sym
-                .k(b"secret")
+                .with_k(b"secret")
                 .is_err_and(|e| matches!(e.source, ErrorImpl::UncompatibleKeyField))
         );
     }
@@ -609,7 +716,7 @@ d6280',
         let mut non_ec = CoseKey::new(KeyType::Symmetric);
         assert!(
             non_ec
-                .crv(Curve::P256)
+                .with_curve(Curve::P256)
                 .is_err_and(|e| matches!(e.source, ErrorImpl::UncompatibleKeyField))
         );
     }
@@ -617,9 +724,9 @@ d6280',
     #[test]
     fn test_roundtrip_symmetric() {
         let mut key = CoseKey::new(KeyType::Symmetric);
-        key.kid(b"kid");
-        key.alg(CoseAlg::HSSLMS);
-        key.k(b"secret").expect("should accept k on symmetric");
+        key.with_key_id(b"kid");
+        key.with_algorithm(CoseAlg::HSSLMS);
+        key.with_k(b"secret").expect("should accept k on symmetric");
         let mut builder: CoseKeySetBuilder<KEY_SET_SIZE_TEST> =
             CoseKeySetBuilder::try_new().unwrap();
         builder.push_key(key).unwrap();
@@ -638,8 +745,8 @@ d6280',
     #[test]
     fn test_key_ops_exists_but_unvalid() {
         let mut key = CoseKey::new(KeyType::Symmetric);
-        key.k(b"my secret").unwrap();
-        key.key_op(KeyOp::Verify);
+        key.with_k(b"my secret").unwrap();
+        key.with_key_op(KeyOp::Verify);
 
         let mut builder: CoseKeySetBuilder<KEY_SET_SIZE_TEST> =
             CoseKeySetBuilder::try_new().unwrap();
@@ -657,7 +764,7 @@ d6280',
     fn test_out_of_space() {
         let mut constrained: CoseKeySetBuilder<2> = CoseKeySetBuilder::try_new().unwrap();
         let mut key1 = CoseKey::new(KeyType::Symmetric);
-        key1.k(b"1").unwrap();
+        key1.with_k(b"1").unwrap();
         assert!(
             constrained
                 .push_key(key1)
@@ -668,79 +775,79 @@ d6280',
     #[test]
     fn test_verify_alg_symmetric_ok() {
         let mut key = CoseKey::new(KeyType::Symmetric);
-        key.alg(CoseAlg::A128KW);
+        key.with_algorithm(CoseAlg::A128KW);
         assert!(key.verify_alg().is_ok());
 
-        key.alg(CoseAlg::HMAC256256);
+        key.with_algorithm(CoseAlg::HMAC256256);
         assert!(key.verify_alg().is_ok());
 
-        key.alg(CoseAlg::HSSLMS);
+        key.with_algorithm(CoseAlg::HSSLMS);
         assert!(key.verify_alg().is_ok());
     }
 
     #[test]
     fn test_verify_alg_symmetric_fail() {
         let mut key = CoseKey::new(KeyType::Symmetric);
-        key.alg(CoseAlg::ES256);
+        key.with_algorithm(CoseAlg::ES256);
         assert!(key.verify_alg().is_err());
     }
 
     #[test]
     fn test_verify_alg_ec2_ok() {
         let mut key = CoseKey::new(KeyType::Ec2);
-        key.alg(CoseAlg::ES256);
+        key.with_algorithm(CoseAlg::ES256);
         assert!(key.verify_alg().is_ok());
 
-        key.alg(CoseAlg::ES256P256);
+        key.with_algorithm(CoseAlg::ES256P256);
         assert!(key.verify_alg().is_ok());
 
-        key.alg(CoseAlg::ECDHESA128KW);
+        key.with_algorithm(CoseAlg::ECDHESA128KW);
         assert!(key.verify_alg().is_ok());
     }
 
     #[test]
     fn test_verify_alg_ec2_fail() {
         let mut key = CoseKey::new(KeyType::Ec2);
-        key.alg(CoseAlg::A128KW);
+        key.with_algorithm(CoseAlg::A128KW);
         assert!(key.verify_alg().is_err());
     }
 
     #[test]
     fn test_verify_alg_okp_ok() {
         let mut key = CoseKey::new(KeyType::Okp);
-        key.alg(CoseAlg::ED25519);
+        key.with_algorithm(CoseAlg::ED25519);
         assert!(key.verify_alg().is_ok());
 
-        key.alg(CoseAlg::ECDHESA128KW);
+        key.with_algorithm(CoseAlg::ECDHESA128KW);
         assert!(key.verify_alg().is_ok());
     }
 
     #[test]
     fn test_verify_alg_okp_fail() {
         let mut key = CoseKey::new(KeyType::Okp);
-        key.alg(CoseAlg::ES256);
+        key.with_algorithm(CoseAlg::ES256);
         assert!(key.verify_alg().is_err());
     }
 
     #[test]
     fn test_verify_curve_ok() {
         let mut key = CoseKey::new(KeyType::Okp);
-        key.crv(Curve::Ed25519).unwrap();
+        key.with_curve(Curve::Ed25519).unwrap();
         assert!(key.verify_curve().is_ok());
 
         let mut key2 = CoseKey::new(KeyType::Ec2);
-        key2.crv(Curve::P256).unwrap();
+        key2.with_curve(Curve::P256).unwrap();
         assert!(key2.verify_curve().is_ok());
     }
 
     #[test]
     fn test_verify_curve_fail() {
         let mut key = CoseKey::new(KeyType::Okp);
-        key.crv(Curve::P256).unwrap();
+        key.with_curve(Curve::P256).unwrap();
         assert!(key.verify_curve().is_err());
 
         let mut key2 = CoseKey::new(KeyType::Ec2);
-        key2.crv(Curve::Ed25519).unwrap();
+        key2.with_curve(Curve::Ed25519).unwrap();
         assert!(key2.verify_curve().is_err());
     }
 
