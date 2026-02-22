@@ -11,13 +11,13 @@ use crate::sign::verify_sign;
 #[cbor(array)]
 pub struct CoseSign1<'a> {
     #[cbor(b(0))]
-    protected: BstrHeaderMap<'a>, // protected is a bstr .cbor header map / or a bstr .size 0
+    pub protected: BstrHeaderMap<'a>, // protected is a bstr .cbor header map / or a bstr .size 0
     #[b(1)]
-    unprotected: HeaderMap<'a>, //
+    pub unprotected: HeaderMap<'a>, //
     #[cbor(b(2), with = "minicbor::bytes")]
-    payload: Option<&'a [u8]>,
+    pub payload: Option<&'a [u8]>,
     #[cbor(b(3), with = "minicbor::bytes")]
-    signature: &'a [u8],
+    pub signature: &'a [u8],
 }
 
 /// This structure will be used for Encrypting process on [`CoseSign1`]
@@ -26,13 +26,13 @@ pub struct CoseSign1<'a> {
 #[cbor(array)]
 struct Sig1Structure<'a> {
     #[n(0)]
-    context: &'static str, // "Signature1"
+    pub context: &'static str, // "Signature1"
     #[cbor(b(1), with = "minicbor::bytes")]
-    body_protected: &'a [u8],
+    pub body_protected: &'a [u8],
     #[cbor(b(2), with = "minicbor::bytes")]
-    external_aad: &'a [u8],
+    pub external_aad: &'a [u8],
     #[cbor(b(3), with = "minicbor::bytes")]
-    payload: &'a [u8],
+    pub payload: &'a [u8],
 }
 
 impl CoseSign1<'_> {
@@ -70,14 +70,14 @@ iter_wrapper!(IterCoseSignature, CoseSignature<'a>);
 #[allow(dead_code)]
 pub struct CoseSign<'a> {
     #[b(0)]
-    protected: BstrHeaderMap<'a>,
+    pub protected: BstrHeaderMap<'a>,
     #[b(1)]
-    unprotected: HeaderMap<'a>,
+    pub unprotected: HeaderMap<'a>,
     // Payload could also be nil, but we don't support detached signatures here right now.
     #[cbor(b(2), with = "minicbor::bytes")]
-    payload: Option<&'a [u8]>,
+    pub payload: Option<&'a [u8]>,
     #[b(3)]
-    signature: IterCoseSignature<'a>,
+    pub signature: IterCoseSignature<'a>,
 }
 
 /// A `CoseSignature` structure as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
@@ -85,11 +85,11 @@ pub struct CoseSign<'a> {
 #[cbor(array)]
 struct CoseSignature<'a> {
     #[b(0)]
-    protected: BstrHeaderMap<'a>,
+    pub protected: BstrHeaderMap<'a>,
     #[b(1)]
-    unprotected: HeaderMap<'a>,
+    pub unprotected: HeaderMap<'a>,
     #[cbor(b(3), with = "minicbor::bytes")]
-    signature: &'a [u8],
+    pub signature: &'a [u8],
 }
 /// This structure will be used for Encrypting process on [`CoseSign`]
 /// to feed the AAD during the cryptographic process.
@@ -97,15 +97,15 @@ struct CoseSignature<'a> {
 #[derive(minicbor::Encode, CborLen)]
 pub(crate) struct SigStructure<'a> {
     #[n(0)]
-    context: &'static str, // "Signature"
+    pub context: &'static str, // "Signature"
     #[cbor(b(1), with = "minicbor::bytes")]
-    body_protected: &'a [u8],
+    pub body_protected: &'a [u8],
     #[cbor(b(2), with = "minicbor::bytes")]
-    sign_protected: &'a [u8],
+    pub sign_protected: &'a [u8],
     #[cbor(b(3), with = "minicbor::bytes")]
-    external_aad: &'a [u8],
+    pub external_aad: &'a [u8],
     #[cbor(b(4), with = "minicbor::bytes")]
-    payload: &'a [u8],
+    pub payload: &'a [u8],
 }
 
 impl CoseSign<'_> {

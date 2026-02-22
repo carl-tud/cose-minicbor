@@ -9,7 +9,7 @@
 //! while keeping a strongly typed internal representation.
 use crate::cose_keys::Curve;
 use minicbor::{
-    CborLen, Decode, Decoder, Encode, bytes::{CborLenBytes, EncodeBytes, cbor_len}, data::Type, decode::Error as DecodeError
+    CborLen, Decode, Decoder, Encode, bytes::{EncodeBytes}, data::Type, decode::Error as DecodeError
 };
 
 /// Enum for field that needs to be either bool or Bytes.
