@@ -9,7 +9,7 @@
 //! while keeping a strongly typed internal representation.
 use crate::cose_keys::Curve;
 use minicbor::{
-    Decode, Decoder, Encode, bytes::EncodeBytes, data::Type, decode::Error as DecodeError,
+    CborLen, Decode, Decoder, Encode, bytes::{CborLenBytes, EncodeBytes, cbor_len}, data::Type, decode::Error as DecodeError
 };
 
 /// Enum for field that needs to be either bool or Bytes.
@@ -43,6 +43,15 @@ impl<'a, Ctx> Decode<'a, Ctx> for BytesBool<'a> {
             Type::Bytes => Ok(BytesBool::Bytes(minicbor::bytes::decode(d, ctx)?)),
             Type::Bool => Ok(BytesBool::Bool(bool::decode(d, ctx)?)),
             _ => Err(DecodeError::type_mismatch(ty).with_message("expected integer op  id")),
+        }
+    }
+}
+
+impl<'a, Ctx> CborLen<Ctx> for BytesBool<'a> {
+    fn cbor_len(&self, ctx: &mut Ctx) -> usize {
+        match self {
+            BytesBool::Bool(b) => b.cbor_len(ctx),
+            BytesBool::Bytes(bytes) => minicbor::bytes::cbor_len(bytes, ctx),
         }
     }
 }
@@ -98,6 +107,15 @@ impl<'a, Ctx> Decode<'a, Ctx> for CrvOrK<'a> {
             Type::Bytes => Ok(CrvOrK::K(minicbor::bytes::decode(d, ctx)?)),
             Type::String | Type::U8 => Ok(CrvOrK::Crv(Curve::decode(d, ctx)?)),
             _ => Err(DecodeError::type_mismatch(ty).with_message("expected integer op  id")),
+        }
+    }
+}
+
+impl<'a, C> CborLen<C> for CrvOrK<'a> {
+    fn cbor_len(&self, ctx: &mut C) -> usize {
+        match self {
+            CrvOrK::Crv(crv_id) => crv_id.cbor_len(ctx),
+            CrvOrK::K(bytes) => minicbor::bytes::cbor_len(bytes, ctx),
         }
     }
 }

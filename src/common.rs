@@ -1,5 +1,5 @@
 use crate::cose_keys::CoseKey;
-use minicbor::{Decode, Encode};
+use minicbor::{CborLen, Decode, Encode};
 use suit_cbor::bstr_wrapper;
 
 #[allow(dead_code)]
@@ -9,7 +9,7 @@ pub(crate) const MAX_SUPPORTED_ACCESSTOKEN_LEN: usize = 256;
 ///
 /// Refer to COSE Header [Parameters
 /// registry](https://www.iana.org/assignments/cose/cose.xhtml#header-parameters).
-#[derive(Decode, Encode, Debug)]
+#[derive(Decode, Encode, CborLen, Debug)]
 #[cbor(map)]
 #[non_exhaustive]
 pub struct HeaderMap<'a> {
@@ -47,37 +47,37 @@ impl HeaderMap<'_> {
 /// COSE Algorithm and Curve identifiers as defined by IANA.
 /// Used as Key Type Parameters in COSE Keys:
 /// <https://www.iana.org/assignments/cose/cose.xhtml#key-type-parameters>
-#[derive(Decode, Debug, Encode, PartialEq, Copy, Clone)]
+#[derive(Decode, Debug, Encode, CborLen, PartialEq, Copy, Clone)]
 #[cbor(index_only)]
 #[non_exhaustive]
 pub enum CoseAlg {
     /// Key Wrap: AES-128
     #[n(-3)]
-    A128KW,
+    A128KW = -3,
     /// Key Wrap: AES-256
     #[n(-5)]
-    A256KW,
+    A256KW = -5,
     /// ECDH-ES + AES Key Wrap 128
     #[n(-29)]
-    ECDHESA128KW,
+    ECDHESA128KW = -29,
     /// ES256 / P-256 signature
     #[n(-9)]
-    ES256P256,
+    ES256P256 = -9,
     /// ES256 deprecated / retro-compatible
     #[n(-7)]
-    ES256,
+    ES256 = 7,
     /// Ed25519 signature
     #[n(-19)]
-    ED25519,
+    ED25519 = -19,
     /// HSS/LMS signature
     #[n(-46)]
-    HSSLMS,
+    HSSLMS = -46,
     /// HMAC truncated 64 bits
     #[n(4)]
-    HMAC25664,
+    HMAC25664 = 4,
     /// HMAC 256 bits
     #[n(5)]
-    HMAC256256,
+    HMAC256256 = 5,
 }
 
 bstr_wrapper!(BstrHeaderMap, HeaderMap<'a>);

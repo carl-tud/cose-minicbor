@@ -1,13 +1,13 @@
 use crate::common::{BstrHeaderMap, HeaderMap, MAX_SUPPORTED_ACCESSTOKEN_LEN};
 use crate::errors::{CoseError, ErrorImpl};
-use minicbor::{Decode, Encode};
+use minicbor::{CborLen, Decode, Encode};
 use suit_cbor::iter_wrapper;
 
 #[cfg(any(feature = "es256", feature = "ed25519", feature = "hss_lms"))]
 use crate::sign::verify_sign;
 
 /// A `COSE_Sign1` structure as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 pub struct CoseSign1<'a> {
     #[cbor(b(0))]
@@ -22,7 +22,7 @@ pub struct CoseSign1<'a> {
 
 /// This structure will be used for Encrypting process on [`CoseSign1`]
 /// to feed the AAD during the cryptographic process.
-#[derive(minicbor::Encode)]
+#[derive(minicbor::Encode, CborLen)]
 #[cbor(array)]
 struct Sig1Structure<'a> {
     #[n(0)]
@@ -65,7 +65,7 @@ impl CoseSign1<'_> {
 iter_wrapper!(IterCoseSignature, CoseSignature<'a>);
 
 /// A `COSE_Sign` structure to handle multiple signature as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 #[allow(dead_code)]
 pub struct CoseSign<'a> {
@@ -81,7 +81,7 @@ pub struct CoseSign<'a> {
 }
 
 /// A `CoseSignature` structure as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 struct CoseSignature<'a> {
     #[b(0)]
@@ -94,7 +94,7 @@ struct CoseSignature<'a> {
 /// This structure will be used for Encrypting process on [`CoseSign`]
 /// to feed the AAD during the cryptographic process.
 #[allow(dead_code)]
-#[derive(minicbor::Encode)]
+#[derive(minicbor::Encode, CborLen)]
 pub(crate) struct SigStructure<'a> {
     #[n(0)]
     context: &'static str, // "Signature"

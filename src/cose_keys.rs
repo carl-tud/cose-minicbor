@@ -2,7 +2,7 @@ use crate::Builder;
 pub use crate::common::CoseAlg;
 use crate::errors::{CoseError, ErrorImpl};
 use crate::multitype::{BytesBool, CrvOrK};
-use minicbor::{Decode, Encode};
+use minicbor::{Decode, Encode, CborLen};
 
 /// A `COSE_Key` as described in Section 7 of RFC9052.
 ///
@@ -11,7 +11,7 @@ use minicbor::{Decode, Encode};
 /// Key Type Parameters](https://www.iana.org/assignments/cose/cose.xhtml#key-type-parameters)
 /// under the assumption that the key type is 1 (Okp) or 2 (Ec2) or 4 (Symmetrical), which so far have non-conflicting
 /// using the CrvOrK struct to accept both symmetrical key and EC id.
-#[derive(Decode, Debug, Encode, Clone, Copy)]
+#[derive(Decode, Debug, Encode, CborLen, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq))]
 #[cbor(map)]
 #[non_exhaustive]
@@ -331,56 +331,56 @@ impl<'a> Builder<CoseKey<'a>> {
 }
 
 /// Key Types supported by Suit [`CoseKey`].
-#[derive(Decode, Debug, Encode, PartialEq, Copy, Clone)]
+#[derive(Decode, Debug, Encode, CborLen, PartialEq, Copy, Clone)]
 #[cbor(index_only)]
 #[non_exhaustive]
 pub enum KeyType {
     #[n(1)]
-    Okp,
+    Okp = 1,
     #[n(2)]
-    Ec2,
+    Ec2 = 2,
     #[n(4)]
-    Symmetric,
+    Symmetric = 4,
     #[n(5)]
-    HssLms,
+    HssLms = 5,
 }
 /// Key Operation values as depicted in the table 5 of RFC 9052.
-#[derive(Decode, Debug, Encode, PartialEq, Copy, Clone)]
+#[derive(Decode, Debug, Encode, CborLen, PartialEq, Copy, Clone)]
 #[cbor(index_only)]
 #[non_exhaustive]
 pub enum KeyOp {
     #[n(1)]
-    Verify,
+    Verify = 1,
     #[n(6)]
-    UnwrapKey,
+    UnwrapKey = 6,
     #[n(8)]
-    DeriveBits,
+    DeriveBits = 8,
     #[n(10)]
-    MACVerify,
+    MACVerify = 10,
 }
 
 // Cose Elliptic Curves values as decrypted in IANA spec [COSE
 /// Key Type Parameters](<https://www.iana.org/assignments/cose/cose.xhtml#key-type-parameters>).
-#[derive(Decode, Debug, Encode, PartialEq, Copy, Clone)]
+#[derive(Decode, Debug, Encode, CborLen, PartialEq, Copy, Clone)]
 #[cbor(index_only)]
 #[non_exhaustive]
 pub enum Curve {
     #[n(1)]
-    P256,
+    P256 = 1,
     #[n(2)]
-    P384,
+    P384 = 2,
     #[n(3)]
-    P521,
+    P521 = 3,
     #[n(4)]
-    X25519,
+    X25519 = 4,
     #[n(5)]
-    X448,
+    X448 = 5,
     #[n(6)]
-    Ed25519,
+    Ed25519 = 6,
     #[n(7)]
-    Ed448,
+    Ed448 = 7,
     #[n(8)]
-    Secp256k1,
+    Secp256k1 = 8,
 }
 
 impl Curve {

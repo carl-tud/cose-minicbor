@@ -1,6 +1,6 @@
 use crate::common::{BstrHeaderMap, HeaderMap};
 use crate::errors::{CoseError, ErrorImpl};
-use minicbor::{Decode, Encode};
+use minicbor::{Decode, Encode, CborLen};
 use suit_cbor::iter_wrapper;
 
 #[allow(dead_code)]
@@ -9,7 +9,7 @@ const MAX_SHARED_SECRET_LEN: usize = 66;
 iter_wrapper!(IterCoseRecipient, CoseRecipient<'a>);
 
 /// Cose Recipient for key exchanges in HMAC process as described in RCF 9052.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 #[non_exhaustive]
 pub struct CoseRecipient<'a> {
