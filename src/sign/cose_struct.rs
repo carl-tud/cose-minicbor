@@ -25,7 +25,7 @@ pub struct CoseSign1<'a> {
 /// to feed the AAD during the cryptographic process.
 #[derive(minicbor::Encode, CborLen)]
 #[cbor(array)]
-struct Sig1Structure<'a> {
+pub struct Sig1Structure<'a> {
     #[n(0)]
     pub context: &'static str, // "Signature1"
     #[cbor(b(1), with = "minicbor::bytes")]
@@ -36,7 +36,23 @@ struct Sig1Structure<'a> {
     pub payload: &'a [u8],
 }
 
-impl CoseSign1<'_> {
+impl<'a> CoseSign1<'a> {
+    pub fn aad(
+        &'a self,
+        payload_buf: Option<&'a [u8]>,
+    ) -> Result<Sig1Structure<'a>, CoseError> {
+        let payload = match self.payload {
+            Some(p) => p,
+            None => payload_buf.ok_or(ErrorImpl::MissingPayload)?,
+        };
+
+        Ok(Sig1Structure {
+            context: "Signature1",
+            body_protected: self.protected.inner_bytes()?,
+            external_aad: &[],
+            payload,
+        })
+    }
     /// Verification process for a single signature detailled in 4.4 of RFC 9052.
     ///
     /// Only supports the ES256, Ed25519 and hss algs for now.
