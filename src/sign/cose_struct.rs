@@ -75,7 +75,7 @@ struct CoseSignature<'a> {
 /// to feed the AAD during the cryptographic process.
 #[allow(dead_code)]
 #[derive(minicbor::Encode, CborLen)]
-pub(crate) struct SigStructure<'a> {
+pub struct SigStructure<'a> {
     #[n(0)]
     pub context: &'static str, // "Signature"
     #[cbor(b(1), with = "minicbor::bytes")]

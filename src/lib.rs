@@ -138,7 +138,7 @@ pub mod cose {
     pub use crate::hmac::cose_struct::{CoseMac, CoseMac0};
 
     #[cfg(any(feature = "es256", feature = "ed25519", feature = "hss_lms"))]
-    pub use crate::sign::cose_struct::{CoseSign, CoseSign1};
+    pub use crate::sign::cose_struct::{CoseSign, CoseSign1, Sig1Structure, SigStructure};
 
     pub use crate::cose_recipient::CoseRecipient;
 
