@@ -396,7 +396,7 @@ impl Curve {
     }
 }
 
-suit_cbor::iter_wrapper!(IterCoseKey, CoseKey<'a>);
+minicbor_weird::iter_wrapper!(IterCoseKey, CoseKey<'a>);
 
 /// An iterable [`CoseKey`] set to decode CoseKeySet buffer bytes as described in Appendix C.7 of RFC9052.
 #[derive(Decode)]

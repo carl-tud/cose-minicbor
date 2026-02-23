@@ -1,7 +1,7 @@
 use crate::common::{BstrHeaderMap, HeaderMap};
 use crate::errors::{CoseError, ErrorImpl};
 use minicbor::{Decode, Encode, CborLen};
-use suit_cbor::iter_wrapper;
+use minicbor_weird::iter_wrapper;
 
 #[allow(dead_code)]
 const MAX_SHARED_SECRET_LEN: usize = 66;

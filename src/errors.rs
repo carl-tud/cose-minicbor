@@ -19,7 +19,7 @@ pub(crate) enum ErrorImpl {
     EncodeError(#[from] minicbor::encode::Error<heapless::CapacityError>),
 
     #[error(transparent)]
-    CborError(#[from] suit_cbor::errors::CborError),
+    CborError(#[from] minicbor_weird::errors::CborError),
 
     #[error(transparent)]
     Utf8(#[from] Utf8Error),

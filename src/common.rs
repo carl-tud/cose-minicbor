@@ -1,6 +1,6 @@
 use crate::{Builder, cose_keys::CoseKey};
 use minicbor::{CborLen, Decode, Encode};
-use suit_cbor::bstr_wrapper;
+use minicbor_weird::bstr_wrapper;
 
 #[allow(dead_code)]
 pub(crate) const MAX_SUPPORTED_ACCESSTOKEN_LEN: usize = 256;
