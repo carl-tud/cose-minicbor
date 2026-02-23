@@ -2,7 +2,7 @@ use crate::common::{BstrHeaderMap, HeaderMap, MAX_SUPPORTED_ACCESSTOKEN_LEN};
 use crate::cose_recipient::IterCoseRecipient;
 use crate::errors::{CoseError, ErrorImpl};
 use crate::hmac::verify_mac;
-use minicbor::{Decode, Encode};
+use minicbor::{CborLen, Decode, Encode};
 
 #[allow(dead_code)]
 const MAX_CEK_KEY_LEN: usize = 64;
@@ -10,7 +10,7 @@ const MAX_CEK_KEY_LEN: usize = 64;
 /// `Cose_MAC0` as described in RCF 9052 6.2.
 ///
 /// This Structure is for MACed Messages with implicit key.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 pub struct CoseMac0<'a> {
     #[b(0)]
@@ -30,7 +30,7 @@ pub struct CoseMac0<'a> {
 /// This structure will be used for Encrypting process on [`CoseMac`] and [`CoseMac0`]
 /// to feed the AAD during the cryptographic process.
 #[allow(dead_code)]
-#[derive(minicbor::Encode)]
+#[derive(minicbor::Encode, CborLen)]
 pub struct MacStructure<'a> {
     #[n(0)]
     pub context: &'static str, // "MAC" / "MAC0"
@@ -46,7 +46,7 @@ pub struct MacStructure<'a> {
 /// `Cose_MAC` as described in RCF 9052 6.2.
 ///
 /// This Structure is for MACed Messages with recipients.
-#[derive(Debug, Encode, Decode)]
+#[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 #[allow(dead_code)]
 pub struct CoseMac<'a> {
