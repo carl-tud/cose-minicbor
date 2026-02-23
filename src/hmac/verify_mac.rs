@@ -12,7 +12,7 @@ pub(crate) fn verify_cose_mac(
     let key_set: CoseKeySet = minicbor::decode(key_bytes)?;
     if !matches!(
         headers.alg,
-        Some(CoseAlg::HMAC256256) | Some(CoseAlg::HMAC25664)
+        Some(CoseAlg::HMAC256) | Some(CoseAlg::HMAC256TruncatedTo64)
     ) {
         Err(ErrorImpl::UnexpectedMacAlg.into())
     } else {

@@ -123,15 +123,15 @@ impl<'a> CoseKey<'a> {
                     alg,
                     CoseAlg::A128KW
                         | CoseAlg::A256KW
-                        | CoseAlg::HMAC256256
-                        | CoseAlg::HMAC25664
+                        | CoseAlg::HMAC256
+                        | CoseAlg::HMAC256TruncatedTo64
                         | CoseAlg::HSSLMS
                 ),
                 KeyType::Ec2 => matches!(
                     alg,
-                    CoseAlg::ES256 | CoseAlg::ES256P256 | CoseAlg::ECDHESA128KW
+                    CoseAlg::ES256 | CoseAlg::ESP256 | CoseAlg::ECDHESA128KW
                 ),
-                KeyType::Okp => matches!(alg, CoseAlg::ED25519 | CoseAlg::ECDHESA128KW),
+                KeyType::Okp => matches!(alg, CoseAlg::Ed25519 | CoseAlg::ECDHESA128KW),
             };
             if !valid {
                 return Err(ErrorImpl::UnexpectedAlg.into());
@@ -778,7 +778,7 @@ d6280',
         key.with_algorithm(CoseAlg::A128KW);
         assert!(key.verify_alg().is_ok());
 
-        key.with_algorithm(CoseAlg::HMAC256256);
+        key.with_algorithm(CoseAlg::HMAC256);
         assert!(key.verify_alg().is_ok());
 
         key.with_algorithm(CoseAlg::HSSLMS);
@@ -798,7 +798,7 @@ d6280',
         key.with_algorithm(CoseAlg::ES256);
         assert!(key.verify_alg().is_ok());
 
-        key.with_algorithm(CoseAlg::ES256P256);
+        key.with_algorithm(CoseAlg::ESP256);
         assert!(key.verify_alg().is_ok());
 
         key.with_algorithm(CoseAlg::ECDHESA128KW);
@@ -815,7 +815,7 @@ d6280',
     #[test]
     fn test_verify_alg_okp_ok() {
         let mut key = CoseKey::new(KeyType::Okp);
-        key.with_algorithm(CoseAlg::ED25519);
+        key.with_algorithm(CoseAlg::Ed25519);
         assert!(key.verify_alg().is_ok());
 
         key.with_algorithm(CoseAlg::ECDHESA128KW);

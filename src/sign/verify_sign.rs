@@ -43,7 +43,7 @@ pub(crate) fn verify_cose_sign(
 
     match headers.alg {
         #[cfg(feature = "es256")]
-        Some(CoseAlg::ES256 | CoseAlg::ES256P256) => {
+        Some(CoseAlg::ES256 | CoseAlg::ESP256) => {
             let vk: P256VerifyingKey =
                 get_verified_key(&key_set, KeyType::Ec2, CoseAlg::ES256, headers.kid)?;
             vk.cose_verify(to_be_signed, signature)?;
