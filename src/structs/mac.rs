@@ -55,6 +55,9 @@ pub struct MacStructure<'a, T> {
     pub payload: Option<T>,
 }
 
+pub const CONTEXT_MAC: &'static str = "MAC";
+pub const CONTEXT_MAC0: &'static str = "MAC0";
+
 pub type MacStructureBytesPayload<'a> = MacStructure<'a, &'a [u8]>;
 
 

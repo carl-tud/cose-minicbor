@@ -43,6 +43,8 @@ pub struct Sig1Structure<'a, T> {
     pub payload: T,
 }
 
+pub const CONTEXT_SIGNATURE1: &'static str = "Signature1";
+
 pub type Sig1StructureBytesPayload<'a> = Sig1Structure<'a, &'a [u8]>;
 
 iter_wrapper!(IterCoseSignature, CoseSignature<'a>);
@@ -74,7 +76,7 @@ pub type CoseSignBytesPayload<'a> = CoseSign<'a, &'a [u8]>;
 /// A `CoseSignature` structure as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
 #[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
-struct CoseSignature<'a> {
+pub struct CoseSignature<'a> {
     #[b(0)]
     #[cbor(with = "minicbor_weird::cbor_bytes")]
     pub protected: HeaderMap<'a>,
@@ -105,5 +107,7 @@ pub struct SigStructure<'a, T> {
     )]
     pub payload: T,
 }
+
+pub const CONTEXT_SIGNATURE: &'static str = "Signature";
 
 pub type SigStructureBytesPayload<'a> = SigStructure<'a, &'a [u8]>;
