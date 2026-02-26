@@ -7,14 +7,15 @@
 //! These adapters make it possible to deserialize CBOR keys or parameters
 //! that can be represented in more than one way (e.g. a `bool` or a byte string),
 //! while keeping a strongly typed internal representation.
-use crate::cose_keys::Curve;
 use minicbor::{
-    CborLen, Decode, Decoder, Encode, bytes::{EncodeBytes}, data::Type, decode::Error as DecodeError
+    CborLen, Decode, Decoder, Encode, bytes::EncodeBytes, data::Type, decode::Error as DecodeError
 };
+
+use crate::structs::keys::Curve;
 
 /// Enum for field that needs to be either bool or Bytes.
 ///
-/// Example: [`crate::keys::CoseKey::y`].
+/// Example: [`crate::cose_keys::CoseKey::y`].
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -56,6 +57,7 @@ impl<'a, Ctx> CborLen<Ctx> for BytesBool<'a> {
     }
 }
 
+
 impl<'a> From<&'a [u8]> for BytesBool<'a> {
     fn from(bytes: &'a [u8]) -> Self {
         BytesBool::Bytes(bytes)
@@ -77,7 +79,7 @@ impl<'a, const N: usize> From<&'a [u8; N]> for BytesBool<'a> {
 /// Enum to support both crv and symmetric key (k) COSE Key Type Parameters for label b(-1).
 ///
 /// It allows to keep a single Key supporting sym and asymmetric keys ([COSE Key Type Parameters](https://www.iana.org/assignments/cose/cose.xhtml))
-/// in [`crate::keys::CoseKey::crv_or_k`]
+/// in [`crate::cose_keys::CoseKey::crv_or_k`]
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(test, derive(PartialEq))]
 pub(crate) enum CrvOrK<'a> {
@@ -122,7 +124,7 @@ impl<'a, C> CborLen<C> for CrvOrK<'a> {
 
 /// To support fields that can be either a text string or an integer label.
 ///
-/// Example: [`crate::keys::CoseKey::key_ops`].
+/// Example: [`crate::cose_keys::CoseKey::key_ops`].
 #[derive(Debug, Encode)]
 #[allow(dead_code)]
 pub(crate) enum TstrOrInt<'a> {
@@ -153,7 +155,7 @@ impl<'a, Ctx> Decode<'a, Ctx> for TstrOrInt<'a> {
 /// We can't use `Option<T>` from minicbor because the value is skipped if None.
 /// Here we clearly want to encode Nul if not present
 #[allow(dead_code)]
-pub(crate) enum NulOrBytes<'a> {
+pub enum NulOrBytes<'a> {
     Nul,
     #[allow(dead_code)]
     Bytes(&'a [u8]),

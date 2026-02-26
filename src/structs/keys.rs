@@ -1,7 +1,6 @@
-use crate::Builder;
-pub use crate::common::CoseAlg;
-use crate::errors::{CoseError, ErrorImpl};
-use crate::multitype::{BytesBool, CrvOrK};
+use crate::{ErrorReason, builder::Builder, multitypes::{BytesBool, CrvOrK}};
+use crate::error::*;
+use super::CoseAlg;
 use minicbor::{Decode, Encode, CborLen};
 
 /// A `COSE_Key` as described in Section 7 of RFC9052.
@@ -121,8 +120,8 @@ impl<'a> CoseKey<'a> {
             let valid = match self.kty {
                 KeyType::Symmetric | KeyType::HssLms => matches!(
                     alg,
-                    CoseAlg::A128KW
-                        | CoseAlg::A256KW
+                    CoseAlg::AESKeyWrap128
+                        | CoseAlg::AESKeyWrap256
                         | CoseAlg::HMAC256
                         | CoseAlg::HMAC256TruncatedTo64
                         | CoseAlg::HSSLMS
@@ -134,7 +133,7 @@ impl<'a> CoseKey<'a> {
                 KeyType::Okp => matches!(alg, CoseAlg::Ed25519 | CoseAlg::ECDHESA128KW),
             };
             if !valid {
-                return Err(ErrorImpl::UnexpectedAlg.into());
+                return Err(ErrorReason::UnexpectedAlg.into());
             }
         }
         Ok(())
@@ -144,7 +143,7 @@ impl<'a> CoseKey<'a> {
     /// Raises error if this key is not of type [`KeyType::Symmetric`].
     pub fn with_k(&mut self, k: &'a [u8]) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Symmetric | KeyType::HssLms) {
-            return Err(ErrorImpl::UncompatibleKeyField.into());
+            return Err(ErrorReason::UncompatibleKeyField.into());
         }
         self.crv_or_k = Some(CrvOrK::K(k));
         Ok(self)
@@ -154,7 +153,7 @@ impl<'a> CoseKey<'a> {
     /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
     pub fn with_curve(&mut self, crv: Curve) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Ec2 | KeyType::Okp) {
-            return Err(ErrorImpl::UncompatibleKeyField.into());
+            return Err(ErrorReason::UncompatibleKeyField.into());
         }
         self.crv_or_k = Some(CrvOrK::Crv(crv));
         Ok(self)
@@ -165,7 +164,7 @@ impl<'a> CoseKey<'a> {
     pub(crate) fn try_crv(&self) -> Result<Curve, CoseError> {
         match self.crv_or_k {
             Some(CrvOrK::Crv(crv)) => Ok(crv),
-            _ => Err(ErrorImpl::MissingCurve.into()),
+            _ => Err(ErrorReason::MissingCurve.into()),
         }
     }
 
@@ -185,7 +184,7 @@ impl<'a> CoseKey<'a> {
         {
             Ok(())
         } else {
-            Err(ErrorImpl::UnexpectedCurve.into())
+            Err(ErrorReason::UnexpectedCurve.into())
         }
     }
 
@@ -193,7 +192,7 @@ impl<'a> CoseKey<'a> {
     /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
     pub fn with_x(&mut self, x: &'a [u8]) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Ec2 | KeyType::Okp) {
-            return Err(ErrorImpl::UncompatibleKeyField.into());
+            return Err(ErrorReason::UncompatibleKeyField.into());
         }
         self.x = Some(x);
         Ok(self)
@@ -206,7 +205,7 @@ impl<'a> CoseKey<'a> {
         T: Into<BytesBool<'a>>,
     {
         if !matches!(self.kty, KeyType::Ec2) {
-            return Err(ErrorImpl::UncompatibleKeyField.into());
+            return Err(ErrorReason::UncompatibleKeyField.into());
         }
 
         self.y = Some(y.into());
@@ -217,7 +216,7 @@ impl<'a> CoseKey<'a> {
     /// Raises error if this key is not of type [`KeyType::Ec2`] or [`KeyType::Okp`].
     pub fn with_d(&mut self, d: &'a [u8]) -> Result<&mut Self, CoseError> {
         if !matches!(self.kty, KeyType::Ec2 | KeyType::Okp) {
-            return Err(ErrorImpl::UncompatibleKeyField.into());
+            return Err(ErrorReason::UncompatibleKeyField.into());
         }
         self.d = Some(d);
         Ok(self)
@@ -238,7 +237,7 @@ impl<'a> CoseKey<'a> {
                 // For symmetric and HSSLMS keys crv_or_k MUST be Some(CrvOrK::K(_))
                 match &self.crv_or_k {
                     Some(CrvOrK::K(_)) => Ok(()),
-                    _ => Err(ErrorImpl::MissingKeyValue.into()),
+                    _ => Err(ErrorReason::MissingKeyValue.into()),
                 }
             }
             KeyType::Ec2 => {
@@ -246,7 +245,7 @@ impl<'a> CoseKey<'a> {
                 if self.x.is_some() && self.y.is_some() {
                     Ok(())
                 } else {
-                    Err(ErrorImpl::MissingKeyValue.into())
+                    Err(ErrorReason::MissingKeyValue.into())
                 }
             }
             KeyType::Okp => {
@@ -254,7 +253,7 @@ impl<'a> CoseKey<'a> {
                 if self.x.is_some() {
                     Ok(())
                 } else {
-                    Err(ErrorImpl::MissingKeyValue.into())
+                    Err(ErrorReason::MissingKeyValue.into())
                 }
             }
         }
@@ -344,6 +343,7 @@ pub enum KeyType {
     #[n(5)]
     HssLms = 5,
 }
+
 /// Key Operation values as depicted in the table 5 of RFC 9052.
 #[derive(Decode, Debug, Encode, CborLen, PartialEq, Copy, Clone)]
 #[cbor(index_only)]
@@ -390,7 +390,7 @@ impl Curve {
     /// * `actual`: Actual curve.
     pub fn check_curve(self, expected: Curve) -> Result<(), CoseError> {
         if expected != self {
-            return Err(ErrorImpl::UnexpectedCurve.into());
+            return Err(ErrorReason::UnexpectedCurve.into());
         }
         Ok(())
     }
@@ -454,7 +454,7 @@ impl<'a> CoseKeySet<'a> {
         if let Some(key) = found {
             key.try_into()
         } else {
-            Err(ErrorImpl::UnvalidKeySet.into())
+            Err(ErrorReason::UnvalidKeySet.into())
         }
     }
 }
@@ -471,7 +471,7 @@ impl<const N: usize> CoseKeySetBuilder<N> {
     pub fn try_new() -> Result<Self, CoseError> {
         let mut inner = heapless::Vec::new();
         let mut enc = minicbor::Encoder::new(minicbor_adapters::WriteToHeapless(&mut inner));
-        enc.begin_array().map_err(|_| ErrorImpl::OutOfSpace(N))?;
+        enc.begin_array().map_err(|_| ErrorReason::OutOfSpace(N))?;
         Ok(Self { inner })
     }
 
@@ -479,7 +479,7 @@ impl<const N: usize> CoseKeySetBuilder<N> {
     pub fn push_key(&mut self, key: CoseKey) -> Result<(), CoseError> {
         key.validate_for_encoding()?;
         minicbor::encode(key, minicbor_adapters::WriteToHeapless(&mut self.inner))
-            .map_err(|_| ErrorImpl::OutOfSpace(N))?;
+            .map_err(|_| ErrorReason::OutOfSpace(N))?;
 
         Ok(())
     }
@@ -489,7 +489,7 @@ impl<const N: usize> CoseKeySetBuilder<N> {
     /// Since it **closes** the builder, you won't be able to use the builder after.
     pub fn into_bytes(mut self) -> Result<heapless::Vec<u8, N>, CoseError> {
         let mut enc = minicbor::Encoder::new(minicbor_adapters::WriteToHeapless(&mut self.inner));
-        enc.end().map_err(|_| ErrorImpl::OutOfSpace(N))?;
+        enc.end().map_err(|_| ErrorReason::OutOfSpace(N))?;
         Ok(self.inner)
     }
 
@@ -536,25 +536,25 @@ impl<'a> TryFrom<CoseKey<'a>> for KeyMaterial<'a> {
                 } else if let (Some(x), Some(y)) = (key.x, key.y) {
                     Ok(KeyMaterial::Ec2 { x, y, crv })
                 } else {
-                    Err(ErrorImpl::MissingKeyValue.into())
+                    Err(ErrorReason::MissingKeyValue.into())
                 }
             }
             KeyType::Okp => {
                 let crv = key.try_crv()?;
                 let Some(x) = key.x else {
-                    return Err(ErrorImpl::MissingKeyValue.into());
+                    return Err(ErrorReason::MissingKeyValue.into());
                 };
                 Ok(KeyMaterial::Okp { x, crv })
             }
             KeyType::Symmetric => {
                 let Some(CrvOrK::K(k)) = key.crv_or_k else {
-                    return Err(ErrorImpl::MissingKeyValue.into());
+                    return Err(ErrorReason::MissingKeyValue.into());
                 };
                 Ok(KeyMaterial::Symmetric(k))
             }
             KeyType::HssLms => {
                 let Some(CrvOrK::K(k)) = key.crv_or_k else {
-                    return Err(ErrorImpl::MissingKeyValue.into());
+                    return Err(ErrorReason::MissingKeyValue.into());
                 };
                 Ok(KeyMaterial::HssLms(k))
             }
@@ -698,7 +698,7 @@ d6280',
         };
         let is_not_a_match =
             key_set.match_and_get_key(KeyType::Symmetric, None, KeyOp::Verify, None);
-        assert!(is_not_a_match.is_err_and(|e| matches!(e.source, ErrorImpl::UnvalidKeySet)));
+        assert!(is_not_a_match.is_err_and(|e| matches!(e.reason, ErrorReason::UnvalidKeySet)));
     }
 
     #[test]
@@ -707,7 +707,7 @@ d6280',
         assert!(
             non_sym
                 .with_k(b"secret")
-                .is_err_and(|e| matches!(e.source, ErrorImpl::UncompatibleKeyField))
+                .is_err_and(|e| matches!(e.reason, ErrorReason::UncompatibleKeyField))
         );
     }
 
@@ -717,7 +717,7 @@ d6280',
         assert!(
             non_ec
                 .with_curve(Curve::P256)
-                .is_err_and(|e| matches!(e.source, ErrorImpl::UncompatibleKeyField))
+                .is_err_and(|e| matches!(e.reason, ErrorReason::UncompatibleKeyField))
         );
     }
 
@@ -756,7 +756,7 @@ d6280',
         assert!(
             key_set
                 .match_and_get_key(KeyType::Symmetric, None, KeyOp::MACVerify, None)
-                .is_err_and(|e| matches!(e.source, ErrorImpl::UnvalidKeySet))
+                .is_err_and(|e| matches!(e.reason, ErrorReason::UnvalidKeySet))
         )
     }
 
@@ -768,14 +768,14 @@ d6280',
         assert!(
             constrained
                 .push_key(key1)
-                .is_err_and(|e| matches!(e.source, ErrorImpl::OutOfSpace(2)))
+                .is_err_and(|e| matches!(e.reason, ErrorReason::OutOfSpace(2)))
         )
     }
 
     #[test]
     fn test_verify_alg_symmetric_ok() {
         let mut key = CoseKey::new(KeyType::Symmetric);
-        key.with_algorithm(CoseAlg::A128KW);
+        key.with_algorithm(CoseAlg::AESKeyWrap128);
         assert!(key.verify_alg().is_ok());
 
         key.with_algorithm(CoseAlg::HMAC256);
@@ -808,7 +808,7 @@ d6280',
     #[test]
     fn test_verify_alg_ec2_fail() {
         let mut key = CoseKey::new(KeyType::Ec2);
-        key.with_algorithm(CoseAlg::A128KW);
+        key.with_algorithm(CoseAlg::AESKeyWrap128);
         assert!(key.verify_alg().is_err());
     }
 
@@ -863,7 +863,7 @@ d6280',
         let key = CoseKey::new(KeyType::Ec2);
         assert!(
             key.verify_key_present()
-                .is_err_and(|e| matches!(e.source, ErrorImpl::MissingKeyValue))
+                .is_err_and(|e| matches!(e.reason, ErrorReason::MissingKeyValue))
         )
     }
 }

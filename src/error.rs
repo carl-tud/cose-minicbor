@@ -2,16 +2,16 @@ use core::{fmt::Debug, str::Utf8Error};
 use thiserror::Error;
 
 #[derive(Error, Debug, Default)]
-#[error("{ctx}: {source}")]
+#[error("{ctx}: {reason}")]
 pub struct CoseError {
     ctx: &'static str,
     #[source]
-    pub(crate) source: ErrorImpl,
+    pub(crate) reason: ErrorReason,
 }
 
 #[allow(dead_code)]
 #[derive(Error, Debug, Default)]
-pub(crate) enum ErrorImpl {
+pub(crate) enum ErrorReason {
     #[error(transparent)]
     DecodeError(#[from] minicbor::decode::Error),
 
@@ -85,11 +85,11 @@ pub(crate) enum ErrorImpl {
 
 impl<E> From<E> for CoseError
 where
-    ErrorImpl: From<E>,
+    ErrorReason: From<E>,
 {
     fn from(e: E) -> Self {
         CoseError {
-            source: ErrorImpl::from(e),
+            reason: ErrorReason::from(e),
             ..Default::default()
         }
     }

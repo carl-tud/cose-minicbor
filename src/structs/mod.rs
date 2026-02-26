@@ -1,133 +1,14 @@
-use crate::{Builder, cose_keys::CoseKey};
+//! Structures used CBOR Object Signing and Encryption (COSE): Structures and Process [RFC 9052]https://datatracker.ietf.org/doc/rfc9052/
+
+pub mod mac;
+pub mod encrypt;
+pub mod sign;
+
+pub mod header;
+pub mod keys;
+pub mod recipient;
+
 use minicbor::{CborLen, Decode, Encode};
-use minicbor_weird::bstr_wrapper;
-
-#[allow(dead_code)]
-pub(crate) const MAX_SUPPORTED_ACCESSTOKEN_LEN: usize = 256;
-
-/// HeaderMap as described in RCF 9052.
-///
-/// Refer to COSE Header [Parameters
-/// registry](https://www.iana.org/assignments/cose/cose.xhtml#header-parameters).
-#[derive(Decode, Encode, CborLen, Debug)]
-#[cbor(map)]
-#[non_exhaustive]
-pub struct HeaderMap<'a> {
-    #[n(1)]
-    // Might be extended as more exotic algorithms are supported
-    pub alg: Option<CoseAlg>,
-
-    #[cbor(b(4), with = "minicbor::bytes")]
-    pub(crate) kid: Option<&'a [u8]>,
-
-    #[cbor(b(5), with = "minicbor::bytes")]
-    pub(crate) iv: Option<&'a [u8]>,
-
-    #[b(-1)]
-    pub(crate) ephemeral_key: Option<CoseKey<'a>>,
-}
-
-impl<'a> HeaderMap<'a> {
-    /// Merge two header maps, using the latter's value in case of conflict.
-    #[allow(unused)]
-    pub fn updated_with(&self, other: &Self) -> Self {
-        Self {
-            alg: self.alg.or(other.alg),
-            kid: self.kid.or(other.kid),
-            iv: self.iv.or(other.iv),
-            ephemeral_key: self
-                .ephemeral_key
-                .as_ref()
-                .copied()
-                .or(other.ephemeral_key.as_ref().copied()),
-        }
-    }
-
-    /// Creates new empty header map
-    pub fn new() -> Self {
-        Self {
-            alg: None,
-            kid: None,
-            iv: None,
-            ephemeral_key: None
-        }
-    }
-
-    /// Turns this map into a builder
-    pub fn builder(self) -> Builder<Self> {
-        self.into()
-    }
-
-    /// Gets alg
-    pub fn algorithm(&self) -> Option<CoseAlg> {
-        self.alg
-    }
-
-    /// Sets alg
-    pub fn with_algorithm(&mut self, alg: CoseAlg) -> &mut Self {
-        self.alg = Some(alg);
-        self
-    }
-
-    /// Gets kid
-    pub fn key_id(&self) -> Option<&'a [u8]> {
-        self.kid
-    }
-
-    /// Sets kid
-    pub fn with_key_id(&mut self, kid: &'a [u8]) -> &mut Self {
-        self.kid = Some(kid);
-        self
-    }
-
-    /// Gets kid
-    pub fn iv(&self) -> Option<&'a [u8]> {
-        self.iv
-    }
-
-     /// Sets IV
-    pub fn with_iv(&mut self, iv: &'a [u8]) -> &mut Self {
-        self.iv = Some(iv);
-        self
-    }
-
-    /// Gets kid
-    pub fn ephemeral_key(&self) -> &Option<CoseKey<'a>> {
-        &self.ephemeral_key
-    }
-
-    /// Sets kid
-    pub fn with_ephemeral_key(&mut self, key: CoseKey<'a>) -> &mut Self {
-        self.ephemeral_key = Some(key);
-        self
-    }
-}
-
-impl<'a> Builder<HeaderMap<'a>> {
-    /// Sets alg
-    pub fn algorithm(mut self, alg: CoseAlg) -> Self {
-        self.with_algorithm(alg);
-        self
-    }
-
-    /// Sets kid
-    pub fn key_id(mut self, kid: &'a [u8]) -> Self {
-        self.with_key_id(kid);
-        self
-    }
-
-     /// Sets IV
-    pub fn iv(mut self, iv: &'a [u8]) -> Self {
-        self.with_iv(iv);
-        self
-    }
-
-    /// Sets kid
-    pub fn ephemeral_key(mut self, key: CoseKey<'a>) -> Self {
-        self.with_ephemeral_key(key);
-        self
-    }
-}
 
 /// COSE Algorithm and Curve identifiers as defined by IANA.
 /// Used as Key Type Parameters in COSE Keys:
@@ -475,32 +356,32 @@ pub enum CoseAlg {
     /// AES Key Wrap w/ 256-bit key
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(-5)]
-    A256KW = -5,
+    AESKeyWrap256 = -5,
 
     /// AES Key Wrap w/ 192-bit key
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(-4)]
-    A192KW = -4,
+    AESKeyWrap192 = -4,
 
     /// AES Key Wrap w/ 128-bit key
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(-3)]
-    A128KW = -3,
+    AESKeyWrap128 = -3,
 
     /// AES-GCM mode w/ 128-bit key, 128-bit tag
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(1)]
-    A128GCM = 1,
+    AESGCM128 = 1,
 
     /// AES-GCM mode w/ 192-bit key, 128-bit tag
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(2)]
-    A192GCM = 2,
+    AESGCM192 = 2,
 
     /// AES-GCM mode w/ 256-bit key, 128-bit tag
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(3)]
-    A256GCM = 3,
+    AESGCM256 = 3,
 
     /// HMAC w/ SHA-256 truncated to 64 bits
     /// [RFC9053](https://www.iana.org/go/rfc9053)
@@ -525,72 +406,70 @@ pub enum CoseAlg {
     /// AES-CCM mode 128-bit key, 64-bit tag, 13-byte nonce
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(10)]
-    AESCCM1664128 = 10,
+    AESCCM128Key64Tag13Nonce = 10,
 
     /// AES-CCM mode 256-bit key, 64-bit tag, 13-byte nonce
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(11)]
-    AESCCM1664256 = 11,
+    AESCCM256Key64Tag13Nonce = 11,
 
     /// AES-CCM mode 128-bit key, 64-bit tag, 7-byte nonce
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(12)]
-    AESCCM6464128 = 12,
+    AESCCM128Key64Tag7Nonce = 12,
 
     /// AES-CCM mode 256-bit key, 64-bit tag, 7-byte nonce
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(13)]
-    AESCCM6464256 = 13,
+    AESCCM256Key64Tag7Nonce = 13,
+
+    /// AES-CCM mode 128-bit key, 128-bit tag, 13-byte nonce
+    /// [RFC9053](https://www.iana.org/go/rfc9053)
+    #[n(30)]
+    AESCCM128Key128Tag13Nonce = 30,
+
+    /// AES-CCM mode 256-bit key, 128-bit tag, 13-byte nonce
+    /// [RFC9053](https://www.iana.org/go/rfc9053)
+    #[n(31)]
+    AESCCM256Key128Tag13Nonce = 31,
+
+    /// AES-CCM mode 128-bit key, 128-bit tag, 7-byte nonce
+    /// [RFC9053](https://www.iana.org/go/rfc9053)
+    #[n(32)]
+    AESCCM128Key128Tag7Nonce = 32,
+
+    /// AES-CCM mode 256-bit key, 128-bit tag, 7-byte nonce
+    /// [RFC9053](https://www.iana.org/go/rfc9053)
+    #[n(33)]
+    AESCCM256Key128Tag7Nonce = 33,
 
     /// AES-MAC 128-bit key, 64-bit tag
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(14)]
-    AESMAC12864 = 14,
+    AESMAC128Key64Tag = 14,
 
     /// AES-MAC 256-bit key, 64-bit tag
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(15)]
-    AESMAC25664 = 15,
+    AESMAC256Key64Tag = 15,
+
+    /// AES-MAC 128-bit key, 128-bit tag
+    /// [RFC9053](https://www.iana.org/go/rfc9053)
+    #[n(25)]
+    AESMAC128Key128Tag = 25,
+
+    /// AES-MAC 256-bit key, 128-bit tag
+    /// [RFC9053](https://www.iana.org/go/rfc9053)
+    #[n(26)]
+    AESMAC256Key128Tag = 26,
 
     /// ChaCha20/Poly1305 w/ 256-bit key, 128-bit tag
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(24)]
     ChaCha20Poly1305 = 24,
 
-    /// AES-MAC 128-bit key, 128-bit tag
-    /// [RFC9053](https://www.iana.org/go/rfc9053)
-    #[n(25)]
-    AESMAC128128 = 25,
-
-    /// AES-MAC 256-bit key, 128-bit tag
-    /// [RFC9053](https://www.iana.org/go/rfc9053)
-    #[n(26)]
-    AESMAC256128 = 26,
-
-    /// AES-CCM mode 128-bit key, 128-bit tag, 13-byte nonce
-    /// [RFC9053](https://www.iana.org/go/rfc9053)
-    #[n(30)]
-    AESCCM16128128 = 30,
-
-    /// AES-CCM mode 256-bit key, 128-bit tag, 13-byte nonce
-    /// [RFC9053](https://www.iana.org/go/rfc9053)
-    #[n(31)]
-    AESCCM16128256 = 31,
-
-    /// AES-CCM mode 128-bit key, 128-bit tag, 7-byte nonce
-    /// [RFC9053](https://www.iana.org/go/rfc9053)
-    #[n(32)]
-    AESCCM64128128 = 32,
-
-    /// AES-CCM mode 256-bit key, 128-bit tag, 7-byte nonce
-    /// [RFC9053](https://www.iana.org/go/rfc9053)
-    #[n(33)]
-    AESCCM64128256 = 33,
-
     /// For doing IV generation for symmetric algorithms.
     /// [RFC9053](https://www.iana.org/go/rfc9053)
     #[n(34)]
     IVGeneration = 34,
 }
-
-bstr_wrapper!(BstrHeaderMap, HeaderMap<'a>);
