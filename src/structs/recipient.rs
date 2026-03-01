@@ -1,5 +1,6 @@
 use minicbor::{Decode, Encode, CborLen};
 use minicbor::bytes::{CborLenBytes, DecodeBytes, EncodeBytes};
+use minicbor_weird::cbor_bytes::CborBytes;
 use minicbor_weird::iter_wrapper;
 use crate::{multitypes::NulOrBytes, structs::CoseAlg};
 use super::header::HeaderMap;
@@ -13,9 +14,14 @@ iter_wrapper!(IterCoseRecipient, CoseRecipient<'a>);
 #[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 #[non_exhaustive]
-pub struct CoseRecipient<'a> {
-    #[cbor(b(0), with = "minicbor_weird::cbor_bytes")]
-    pub protected: HeaderMap<'a>,
+pub struct CoseRecipient<'a, Header = CborBytes<HeaderMap<'a>>> {
+    #[cbor(b(0),
+        with = "minicbor::bytes",
+        encode_bound = "Header: EncodeBytes<Ctx>", 
+        decode_bound = "Header: DecodeBytes<'bytes, Ctx>",
+        cbor_len_bound = "Header: CborLenBytes<Ctx>",
+    )]
+    pub protected: Header,
 
     #[b(1)]
     pub unprotected: HeaderMap<'a>,
