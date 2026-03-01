@@ -33,7 +33,7 @@ pub const CONTEXT_RECIPIENT_IN_RECIPIENT: &'static str = "Rec_Recipient";
 /// As decrypted in [RFC 9053 5.2](https://www.rfc-editor.org/rfc/rfc9053#section-5.2)
 #[allow(dead_code)]
 #[derive(Encode)]
-pub struct CoseKdfContext<'a, T> {
+pub struct CoseKdfContext<'a, T = &'a [u8]> {
     #[n(0)]
     pub alg_id: CoseAlg,
     #[n(1)]
@@ -74,5 +74,3 @@ pub struct SuppPubInfo<T> {
     )]
     pub protected: T,
 }
-
-pub type SuppPubInfoBytesProtected<'a> = SuppPubInfo<&'a [u8]>;

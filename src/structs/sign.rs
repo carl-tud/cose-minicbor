@@ -5,7 +5,7 @@ use crate::structs::header::HeaderMap;
 /// A `COSE_Sign1` structure as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
 #[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
-pub struct CoseSign1<'a, T> {
+pub struct CoseSign1<'a, T = &'a [u8]> {
     #[cbor(b(0), with = "minicbor_weird::cbor_bytes")]
     pub protected: HeaderMap<'a>, // protected is a bstr .cbor header map / or a bstr .size 0
     #[b(1)]
@@ -21,13 +21,11 @@ pub struct CoseSign1<'a, T> {
     pub signature: &'a [u8],
 }
 
-pub type CoseSign1BytesPayload<'a> = CoseSign1<'a, &'a [u8]>;
-
 /// This structure will be used for Encrypting process on [`CoseSign1`]
 /// to feed the AAD during the cryptographic process.
 #[derive(minicbor::Encode, CborLen)]
 #[cbor(array)]
-pub struct Sig1Structure<'a, T> {
+pub struct Sig1Structure<'a, T = &'a [u8]> {
     #[n(0)]
     pub context: &'static str, // "Signature1"
     #[cbor(b(1), with = "minicbor_weird::cbor_bytes")]
@@ -45,15 +43,13 @@ pub struct Sig1Structure<'a, T> {
 
 pub const CONTEXT_SIGNATURE1: &'static str = "Signature1";
 
-pub type Sig1StructureBytesPayload<'a> = Sig1Structure<'a, &'a [u8]>;
-
 iter_wrapper!(IterCoseSignature, CoseSignature<'a>);
 
 /// A `COSE_Sign` structure to handle multiple signature as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
 #[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 #[allow(dead_code)]
-pub struct CoseSign<'a, T> {
+pub struct CoseSign<'a, T = &'a [u8]> {
     #[b(0)]
     #[cbor(with = "minicbor_weird::cbor_bytes")]
     pub protected: HeaderMap<'a>,
@@ -70,8 +66,6 @@ pub struct CoseSign<'a, T> {
     #[b(3)]
     pub signature: IterCoseSignature<'a>,
 }
-
-pub type CoseSignBytesPayload<'a> = CoseSign<'a, &'a [u8]>;
 
 /// A `CoseSignature` structure as defined in [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html)
 #[derive(Debug, Encode, Decode, CborLen)]
@@ -90,7 +84,7 @@ pub struct CoseSignature<'a> {
 /// to feed the AAD during the cryptographic process.
 #[allow(dead_code)]
 #[derive(minicbor::Encode, CborLen)]
-pub struct SigStructure<'a, T> {
+pub struct SigStructure<'a, T = &'a [u8]> {
     #[n(0)]
     pub context: &'static str, // "Signature"
     #[cbor(b(1), with = "minicbor::bytes")]
@@ -109,5 +103,3 @@ pub struct SigStructure<'a, T> {
 }
 
 pub const CONTEXT_SIGNATURE: &'static str = "Signature";
-
-pub type SigStructureBytesPayload<'a> = SigStructure<'a, &'a [u8]>;

@@ -11,7 +11,7 @@ const MAX_CEK_KEY_LEN: usize = 64;
 /// This Structure is for MACed Messages with implicit key.
 #[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
-pub struct CoseMac0<'a, T> {
+pub struct CoseMac0<'a, T = &'a [u8]> {
     #[b(0)]
     #[cbor(with = "minicbor_weird::cbor_bytes")]
     pub protected: HeaderMap<'a>,
@@ -31,14 +31,11 @@ pub struct CoseMac0<'a, T> {
     pub tag: &'a [u8],
 }
 
-pub type CoseMac0BytesPayload<'a> = CoseMac0<'a, &'a [u8]>;
-
-
 /// This structure will be used for Encrypting process on [`CoseMac`] and [`CoseMac0`]
 /// to feed the AAD during the cryptographic process.
 #[allow(dead_code)]
 #[derive(minicbor::Encode, CborLen)]
-pub struct MacStructure<'a, T> {
+pub struct MacStructure<'a, T = &'a [u8]> {
     #[n(0)]
     pub context: &'static str, // "MAC" / "MAC0"
     #[cbor(b(1), with = "minicbor_weird::cbor_bytes")]
@@ -58,16 +55,13 @@ pub struct MacStructure<'a, T> {
 pub const CONTEXT_MAC: &'static str = "MAC";
 pub const CONTEXT_MAC0: &'static str = "MAC0";
 
-pub type MacStructureBytesPayload<'a> = MacStructure<'a, &'a [u8]>;
-
-
 /// `Cose_MAC` as described in RCF 9052 6.2.
 ///
 /// This Structure is for MACed Messages with recipients.
 #[derive(Debug, Encode, Decode, CborLen)]
 #[cbor(array)]
 #[allow(dead_code)]
-pub struct CoseMac<'a, T> {
+pub struct CoseMac<'a, T = &'a [u8]> {
     #[b(0)]
     #[cbor(with = "minicbor_weird::cbor_bytes")]
     pub protected: HeaderMap<'a>,
@@ -89,5 +83,3 @@ pub struct CoseMac<'a, T> {
     #[n(4)]
     pub recipients: IterCoseRecipient<'a>, // at least 1
 }
-
-pub type CoseMacBytesPayload<'a> = CoseMac<'a, &'a [u8]>;
